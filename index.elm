@@ -23,33 +23,49 @@ model = { newTodo = ""
 
 -- UPDATE
 
-type Msg = Change String | Add
+type Msg = Change String | Add | Delete Int
 
 update : Msg -> Model -> Model
 update msg model =
-    case msg of
-        Add ->
-            { model | todoList = model.newTodo :: model.todoList
-            , newTodo = "" }
-        Change str ->
-            { model | newTodo = str }
+    let
+        isSpace = String.trim >> String.isEmpty
+    in
+        case msg of
+            Add ->
+                if isSpace model.newTodo then
+                    model
+                else
+                    { model | todoList = model.newTodo :: model.todoList
+                    , newTodo = "" }
+            Change str ->
+                { model | newTodo = str }
+            Delete n ->
+                let
+                    t = model.todoList
+                in          
+                    { model |
+                          todoList = List.take n t ++ List.drop (n + 1) t}
 
 -- VIEW
 
 view : Model -> Html Msg
 view model =
     div []
-        [ input [ type_ "text", placeholder "input your todo", onInput Change ] []
+        [ input [ type_ "text"
+                , placeholder "input your todo"
+                , onInput Change
+                , value model.newTodo] []
         , button [ onClick (Add) ] [ text "add todo" ]
-        , div [] (showList model)
+        , div [] (showList model.todoList)
          ]
 
-showList : Model -> List (Html Msg)
-showList sl =
+showList : List String -> List (Html Msg)
+showList =
     let
-        column s = div []
+        todos = List.indexedMap (,)
+        column (n,s) = div []
                    [ text s
-                  -- , button[ onClick Delete ] [ text "×" ]
+                   , button[ onClick (Delete n) ] [ text "×" ]
                    ]
     in
-        List.map column sl.todoList
+        todos >> List.map column  
